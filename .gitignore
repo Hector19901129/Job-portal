@@ -1,0 +1,9 @@
+.well-known/
+_MACOSX/
+main-new/
+user_guide/
+uploads/
+.htaccess
+*.zip
+*.rst
+

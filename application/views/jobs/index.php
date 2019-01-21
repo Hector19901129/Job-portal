@@ -42,8 +42,9 @@
     <div class="form-group">
       <input type="text" name="end_date" class="input-sm form-control datepicker" value="<?php echo date("m/d/Y", strtotime($end_date)) ?>" onChange="endTimeChange(this)">
     </div>
-    <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Print All:</span><input type="checkbox" onchange="checkPrintAll(this)" name="printall" <?php echo $printall != 0 ? "checked" : ''?>></div>
     <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Show All:</span><input type="checkbox" onchange="checkShowAll(this)" name="showall" <?php echo $showall != 0 ? "checked" : ''?>></div>
+    <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Print All:</span><input type="checkbox" onchange="checkPrintAll(this)" name="printall" <?php echo $printall != 0 ? "checked" : ''?>></div>
+    
     <div class="form-group"><a href="<?php echo site_url("jobs/print_viewall/") ?>" class="btn btn-default btn-xs" style="margin: 0px 5px 0px 5px;" data-toggle="tooltip" data-placement="right" title="<?php echo lang("ctn_632") ?>"><span class="glyphicon glyphicon-print"></span></a></div>
       <?php } ?>
 

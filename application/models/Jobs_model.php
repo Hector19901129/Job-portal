@@ -304,7 +304,7 @@ class Jobs_Model extends CI_Model
 			->get("users");
 	}
 	//newly modified
-	public function get_jobs_total($catid, $view, $datatable, $start_date, $end_date)
+	public function get_jobs_total($catid, $view, $datatable, $start_date, $end_date, $showall)
 	{
 		$datatable->db_search(array(
 			"jobs.title",
@@ -327,16 +327,19 @@ class Jobs_Model extends CI_Model
 		if($catid > 0) {
 			$this->db->where("jobs.categoryid", $catid);
 		}
-
+		if($showall == 0){
+			$this->db->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date);
+		}
 		$s = $this->db
-				->select("COUNT(*) as num")
-				->join("users", "users.ID = jobs.userid", "left outer")
+			->select("COUNT(*) as num")
+			->join("users", "users.ID = jobs.userid", "left outer")
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
-			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
-			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
-				->get("jobs");
+			->get("jobs");
+		
+		
 		$r = $s->row();
 		if(isset($r->num)) return $r->num;
 		return 0;
@@ -356,7 +359,7 @@ class Jobs_Model extends CI_Model
 		return 0;
 	}
 	//newly modified
-	public function get_jobs($catid, $datatable, $view, $start_date, $end_date)
+	public function get_jobs($catid, $datatable, $view, $start_date, $end_date, $showall)
 	{
 
 		if($view->num_rows() > 0) {
@@ -371,7 +374,10 @@ class Jobs_Model extends CI_Model
 		if($catid > 0) {
 			$this->db->where("jobs.categoryid", $catid);
 		}
-
+		if($showall == 0){
+			$this->db->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date);
+		}
 		$datatable->db_order();
 
 		$datatable->db_search(array(
@@ -403,8 +409,6 @@ class Jobs_Model extends CI_Model
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
-			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
-			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
 			->limit($datatable->length, $datatable->start)
 			->get("jobs");
 	}

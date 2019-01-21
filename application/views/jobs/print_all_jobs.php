@@ -105,7 +105,7 @@
 
         <div class="row">
         <div class="col-md-8">
-        <h3><?php echo $r1["job"]->title ?></h3>
+        <h3><?php echo $r1["job"]->title ?> : #<?php echo $r1["job"]->ID ?></h3> 
         <p><?php echo $r1["job"]->body ?></p>
         <?php if(!empty($r1["job"]->notes) && $this->common->has_permissions(array("admin", "job_manager", "job_worker"), $this->user)) : ?>
         <hr>
@@ -137,7 +137,7 @@
           </div>
           <hr>
 
-        <div class="media" style="overflow: visible !important;">
+        <!-- <div class="media" style="overflow: visible !important;">
           <div class="media-left">
               <?php echo $this->common->get_user_display(array("username" => $r1["job"]->client_username, "avatar" => $r1["job"]->client_avatar, "online_timestamp" => $r1["job"]->client_online_timestamp, "user" => false)) ?>
           </div>
@@ -173,7 +173,7 @@
             <hr>
           <?php endif; ?>
 
-          </div>
+          </div> -->
         </div>
 
         </div>
@@ -185,7 +185,7 @@
         </div>
 
 
-        <?php foreach($r1["replies"]->result() as $r) : ?>
+        <!-- <?php foreach($r1["replies"]->result() as $r) : ?>
           <div class="white-area-content content-separator">
 
         <p><?php echo $this->common->get_user_display(array("username" => $r->username, "avatar" => $r->avatar, "online_timestamp" => $r->online_timestamp,"user" => false)) ?> <a href="<?php echo site_url("profile/" . $r->username) ?>"><?php echo $r->username ?></a></p>
@@ -211,7 +211,7 @@
         <?php endif; ?>
         <hr>
         </div>
-        <?php endforeach; ?>
+        <?php endforeach; ?> -->
 
         
         </div>

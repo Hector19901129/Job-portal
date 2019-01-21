@@ -43,6 +43,7 @@
       <input type="text" name="end_date" class="input-sm form-control datepicker" value="<?php echo date("m/d/Y", strtotime($end_date)) ?>" onChange="endTimeChange(this)">
     </div>
     <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Print All:</span><input type="checkbox" onchange="checkPrintAll(this)" name="printall" <?php echo $printall != 0 ? "checked" : ''?>></div>
+    <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Show All:</span><input type="checkbox" onchange="checkShowAll(this)" name="showall" <?php echo $showall != 0 ? "checked" : ''?>></div>
     <div class="form-group"><a href="<?php echo site_url("jobs/print_viewall/") ?>" class="btn btn-default btn-xs" style="margin: 0px 5px 0px 5px;" data-toggle="tooltip" data-placement="right" title="<?php echo lang("ctn_632") ?>"><span class="glyphicon glyphicon-print"></span></a></div>
       <?php } ?>
 
@@ -107,6 +108,7 @@ $(document).ready(function() {
     if("<?php echo $page ?>" == "index"){
       url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
       url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
     }
    var st = $('#search_type').val();
     var table = "<?php echo $page?>" == "index" ? $('#job-table').DataTable({
@@ -215,6 +217,7 @@ function change_search(search)
           url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
           location.href = url;
         });
     }
@@ -229,6 +232,7 @@ function change_search(search)
           url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
           location.href = url;
         });
     }
@@ -249,6 +253,7 @@ function set_search_icon(icon, options)
       url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
       url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
       url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
       location.href = url;
     }
     //newly added
@@ -258,6 +263,7 @@ function set_search_icon(icon, options)
       url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
       url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
       url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
       location.href = url;
     }
     function set_search_icon(icon, options) 
@@ -284,6 +290,26 @@ function set_search_icon(icon, options)
           url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
           url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
+          location.href = url;
+        });
+      
+    }
+    function checkShowAll(checkbox) 
+    {
+      url = "<?php echo site_url("jobs/printall/" . $catid) ?>";
+      url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
+      $.post(url, 
+      {'<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'},
+        function(result){
+          url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+          url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          url += "/"+(document.getElementsByName("showall")[0].checked == false ? 0 : 1);
           location.href = url;
         });
       

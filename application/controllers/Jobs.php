@@ -21,7 +21,7 @@ class Jobs extends CI_Controller
 		}
 	}
 	//newly modified
-	public function index($catid=0, $start_date = null, $end_date = null, $printall = 0)
+	public function index($catid=0, $start_date = null, $end_date = null, $printall = 0, $showall = 0)
 	{
 		$catid = intval($catid);
 		if(!$this->common->has_permissions(array(
@@ -47,7 +47,8 @@ class Jobs extends CI_Controller
 			"views" => $views,
 			"start_date" => $start_date,
 			"end_date" => $end_date,
-			"printall" => $printall
+			"printall" => $printall,
+			"showall" => $showall
 			)
 		);
 	}
@@ -284,7 +285,7 @@ class Jobs extends CI_Controller
 		);
 	}
 
-	public function job_page($page, $catid=0, $start_date = null, $end_date = null)
+	public function job_page($page, $catid=0, $start_date = null, $end_date = null, $showall = 0)
 	{
 
 		// get custom view
@@ -325,9 +326,9 @@ class Jobs extends CI_Controller
 		if($page == "index") {
 			$this->datatables->set_total_rows(
 				$this->jobs_model
-					->get_jobs_total($catid, $custom_view, $this->datatables, $start_date, $end_date)
+					->get_jobs_total($catid, $custom_view, $this->datatables, $start_date, $end_date, $showall)
 			);
-			$jobs = $this->jobs_model->get_jobs($catid, $this->datatables, $custom_view, $start_date, $end_date);
+			$jobs = $this->jobs_model->get_jobs($catid, $this->datatables, $custom_view, $start_date, $end_date, $showall);
 		} elseif($page == "your") {
 			$this->datatables->set_total_rows(
 				$this->jobs_model

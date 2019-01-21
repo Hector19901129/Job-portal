@@ -48,6 +48,49 @@ class Jobs_Model extends CI_Model
 	public function visibleChange($id, $value){
 		$this->db->where("ID", $id)->update("jobs", $value);
 	}
+	//newly added
+	public function printableChange($id, $value){
+		$this->db->where("ID", $id)->update("jobs", $value);
+	}
+	//newly added
+	public function printall($catid, $start_date, $end_date, $printall){
+		$this->db->update("jobs", array("printable" => 0));
+		if($catid != 0) {
+			$this->db->where("categoryid", $catid)
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
+			->update("jobs", array("printable" => $printall));
+		}else{
+			$this->db->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+		->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
+		->update("jobs", array("printable" => $printall));
+		}
+		
+		$query = $this->db->last_query();
+		print_r($query);
+		exit;
+		
+	}
+	//newly added
+	public function getOldestDate(){
+		$SQL = "select STR_TO_DATE(job_date, '%d-%m-%Y') as job_date from jobs order by job_date asc limit 1";
+		$query = $this->db->query($SQL);
+		$row = $query->result();
+		return $row[0]->job_date;
+	}
+	//newly added
+	public function getLatestDate(){
+		$SQL = "select STR_TO_DATE(job_date, '%d-%m-%Y') as job_date from jobs order by job_date desc limit 1";
+		$query = $this->db->query($SQL);
+		$row = $query->result();
+		return $row[0]->job_date;
+	}
+	//newly added
+	public function getPrintViewID(){
+		return $this->db->select("ID")
+		->where("printable", '1')
+		->get("jobs");
+	}
 	public function get_categories_total()
 	{
 		$s = $this->db->select("COUNT(*) as num")->get("job_categories");
@@ -260,8 +303,8 @@ class Jobs_Model extends CI_Model
 			->group_by("users.ID")
 			->get("users");
 	}
-
-	public function get_jobs_total($catid, $view, $datatable)
+	//newly modified
+	public function get_jobs_total($catid, $view, $datatable, $start_date, $end_date)
 	{
 		$datatable->db_search(array(
 			"jobs.title",
@@ -291,6 +334,8 @@ class Jobs_Model extends CI_Model
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
 				->get("jobs");
 		$r = $s->row();
 		if(isset($r->num)) return $r->num;
@@ -310,8 +355,8 @@ class Jobs_Model extends CI_Model
 		if(isset($r->num)) return $r->num;
 		return 0;
 	}
-
-	public function get_jobs($catid, $datatable, $view)
+	//newly modified
+	public function get_jobs($catid, $datatable, $view, $start_date, $end_date)
 	{
 
 		if($view->num_rows() > 0) {
@@ -344,7 +389,7 @@ class Jobs_Model extends CI_Model
 				jobs.timestamp, jobs.categoryid, jobs.status,
 				jobs.priority, jobs.last_reply_timestamp,
 				jobs.last_reply_userid, jobs.message_id_hash,
-				jobs.guest_email, jobs.visible, 
+				jobs.guest_email, jobs.visible, jobs.printable, 
 				users.username as client_username, users.avatar as client_avatar,
 				users.online_timestamp as client_online_timestamp,
 				users.first_name as client_first_name,
@@ -358,6 +403,8 @@ class Jobs_Model extends CI_Model
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
+			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date)
 			->limit($datatable->length, $datatable->start)
 			->get("jobs");
 	}
@@ -932,7 +979,6 @@ class Jobs_Model extends CI_Model
 		if(isset($r->num)) return $r->num;
 		return 0;
 	}
-
 	public function get_jobs_for_day($date)
 	{
 

@@ -36,3 +36,4 @@
 12. database renovation
 13. site_settings <- field_order
 23. jobs <- visible defined 1 
+25. jobs <- printable defined 0

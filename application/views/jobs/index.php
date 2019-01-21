@@ -34,7 +34,20 @@
       </div>
     <?php endif; ?>
 
-         <div class="btn-group">
+        <!-- newly added -->
+      <?php if($page == "index") {?>
+    <div class="form-group">
+      <input type="text" name="start_date" class="input-sm form-control datepicker" value="<?php echo date("m/d/Y", strtotime($start_date)) ?>" onChange="startTimeChange(this)">
+    </div>
+    <div class="form-group">
+      <input type="text" name="end_date" class="input-sm form-control datepicker" value="<?php echo date("m/d/Y", strtotime($end_date)) ?>" onChange="endTimeChange(this)">
+    </div>
+    <div class="form-group"><span style="padding-right: 7px;padding-left: 12px;">Print All:</span><input type="checkbox" onchange="checkPrintAll(this)" name="printall" <?php echo $printall != 0 ? "checked" : ''?>></div>
+    <div class="form-group"><a href="<?php echo site_url("jobs/print_viewall/") ?>" class="btn btn-default btn-xs" style="margin: 0px 5px 0px 5px;" data-toggle="tooltip" data-placement="right" title="<?php echo lang("ctn_632") ?>"><span class="glyphicon glyphicon-print"></span></a></div>
+      <?php } ?>
+
+
+  <div class="btn-group">
     <div class="dropdown">
   <button class="btn btn-default btn-sm dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
     <?php echo lang("ctn_462") ?>
@@ -77,7 +90,7 @@
 <div class="table-responsive">
 <table id="job-table" class="table table-bordered table-hover table-striped small-text">
 <thead>
-      <tr class="table-header"><td><?php echo lang("ctn_611") ?></td><td><?php echo lang("ctn_11") ?></td><td><?php echo lang("ctn_428") ?></td><td><?php echo lang("ctn_391") ?></td><td><?php echo lang("ctn_462") ?></td><td><?php echo lang("ctn_481") ?></td><?php if($page == "index"){?><td><?php echo "Visible" ?></td><?php }?><td><?php echo lang("ctn_550") ?></td><td><?php echo lang("ctn_463") ?></td><td><?php echo lang("ctn_52") ?></td></tr>
+      <tr class="table-header"><td><?php echo lang("ctn_611") ?></td><td><?php echo lang("ctn_11") ?></td><td><?php echo lang("ctn_428") ?></td><td><?php echo lang("ctn_391") ?></td><td><?php echo lang("ctn_462") ?></td><td><?php echo lang("ctn_481") ?></td><?php if($page == "index"){?><td><?php echo "Visible" ?></td><?php }?><?php if($page == "index"){?><td><?php echo "Print" ?></td><?php }else {?><td><?php echo "Assigned" ?></td><?php } ?><td><?php echo lang("ctn_463") ?></td><td><?php echo lang("ctn_52") ?></td></tr>
 </thead>
 <tbody>
 </tbody>
@@ -88,9 +101,13 @@
 </div>
 
 <script type="text/javascript">
-  
+//newly modified
 $(document).ready(function() {
-  
+    var url = "<?php echo site_url("jobs/job_page/".$page."/" . $catid) ?>";
+    if("<?php echo $page ?>" == "index"){
+      url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+    }
    var st = $('#search_type').val();
     var table = "<?php echo $page?>" == "index" ? $('#job-table').DataTable({
         "dom" : "<'row'<'col-sm-12'tr>>" +
@@ -104,7 +121,7 @@ $(document).ready(function() {
         <?php if($default_order != null) : ?>
           [<?php echo $default_order ?>, "<?php echo $default_order_type ?>"]
         <?php else : ?>
-          [7, "desc"]
+          [8, "desc"]
         <?php endif; ?>
         ],
         "columns": [
@@ -113,14 +130,14 @@ $(document).ready(function() {
         null,
         null,
         null,
-        { "orderable": false },
+        null,
         { "orderable": false },
         { "orderable": false },
         null,
         { "orderable": false }
     ],
         "ajax": {
-            url : "<?php echo site_url("jobs/job_page/" . $page . "/" . $catid) ?>",
+            url : url,
             type : 'GET',
             data : function ( d ) {
                 d.search_type = $('#search_type').val();
@@ -156,7 +173,7 @@ $(document).ready(function() {
         { "orderable": false }
     ],
         "ajax": {
-            url : "<?php echo site_url("jobs/job_page/" . $page . "/" . $catid) ?>",
+            url : url,
             type : 'GET',
             data : function ( d ) {
                 d.search_type = $('#search_type').val();
@@ -187,16 +204,34 @@ function change_search(search)
         $('#search_type').val(search);
         $( "#form-search-input" ).trigger( "change" );
     }
+    //newly added
     function visibleChange(checkbox) 
     {
       $.post("<?php echo site_url("jobs/visibleChange") ?>", 
       {'<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>', 
         id: checkbox.id.split("checkbox")[1], value: checkbox.checked == false ? 0 : 1}, 
         function(result){
-          window.location.href = "<?php echo site_url("jobs") ?>";
+          url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+          url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          location.href = url;
         });
     }
-
+    //newly added
+    function printableChange(checkbox) 
+    {
+      $.post("<?php echo site_url("jobs/printableChange") ?>", 
+      {'<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>', 
+        id: checkbox.id.split("printcheckbox")[1], value: checkbox.checked == false ? 0 : 1}, 
+        function(result){
+          url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+          url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          location.href = url;
+        });
+    }
 function set_search_icon(icon, options) 
     {
       for(var i = 0; i<options.length;i++) {
@@ -207,4 +242,51 @@ function set_search_icon(icon, options)
         }
       }
     }
+    //newly added
+    function startTimeChange(time) 
+    {
+      url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+      url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      location.href = url;
+    }
+    //newly added
+    function endTimeChange(time) 
+    {
+      url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+      url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      location.href = url;
+    }
+    function set_search_icon(icon, options) 
+    {
+      for(var i = 0; i<options.length;i++) {
+        if(options[i] == icon) {
+          $('#' + icon).fadeIn(10);
+        } else {
+          $('#' + options[i]).fadeOut(10);
+        }
+      }
+    }
+    //newly added
+    function checkPrintAll(checkbox) 
+    {
+      url = "<?php echo site_url("jobs/printall/" . $catid) ?>";
+      url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+      url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+      $.post(url, 
+      {'<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'},
+        function(result){
+          url = "<?php echo site_url("jobs/".$page."/" . $catid) ?>";
+          url += "/"+(document.getElementsByName("start_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("end_date")[0].value).replace(/\//g, "-");
+          url += "/"+(document.getElementsByName("printall")[0].checked == false ? 0 : 1);
+          location.href = url;
+        });
+      
+    }
+    
 </script>

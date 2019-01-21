@@ -20,8 +20,8 @@ class Jobs extends CI_Controller
 			$this->template->error(lang("error_85"));
 		}
 	}
-
-	public function index($catid=0)
+	//newly modified
+	public function index($catid=0, $start_date = null, $end_date = null, $printall = 0)
 	{
 		$catid = intval($catid);
 		if(!$this->common->has_permissions(array(
@@ -37,18 +37,21 @@ class Jobs extends CI_Controller
 		} else {
 			$categories = $this->jobs_model->get_user_categories($this->user->info->ID);
 		}
-
+		$start_date = $start_date == null ? $this->jobs_model->getOldestDate() : $this->common->formatDateMdYToYmd($start_date);
+		$end_date = $end_date == null ? $this->jobs_model->getLatestDate() : $this->common->formatDateMdYToYmd($end_date);
 		$views = $this->jobs_model->get_custom_views($this->user->info->ID);
-
 		$this->template->loadContent("jobs/index.php", array(
 			"page" => "index",
 			"catid" => $catid,
 			"categories" => $categories,
-			"views" => $views
+			"views" => $views,
+			"start_date" => $start_date,
+			"end_date" => $end_date,
+			"printall" => $printall
 			)
 		);
 	}
-
+	
 	public function merge_job($jobid)
 	{
 		$jobid = intval($jobid);
@@ -270,7 +273,6 @@ class Jobs extends CI_Controller
 		} else {
 			$categories = $this->jobs_model->get_user_categories($this->user->info->ID);
 		}
-
 		$views = $this->jobs_model->get_custom_views($this->user->info->ID);
 
 		$this->template->loadContent("jobs/index.php", array(
@@ -282,7 +284,7 @@ class Jobs extends CI_Controller
 		);
 	}
 
-	public function job_page($page, $catid=0)
+	public function job_page($page, $catid=0, $start_date = null, $end_date = null)
 	{
 
 		// get custom view
@@ -318,13 +320,14 @@ class Jobs extends CI_Controller
 				 ),
 			)
 		);
-
+		$start_date = $start_date == null ? null : $this->common->formatDateMdYToYMd($start_date);
+		$end_date = $end_date == null ? null : $this->common->formatDateMdYToYMd($end_date);
 		if($page == "index") {
 			$this->datatables->set_total_rows(
 				$this->jobs_model
-					->get_jobs_total($catid, $custom_view, $this->datatables)
+					->get_jobs_total($catid, $custom_view, $this->datatables, $start_date, $end_date)
 			);
-			$jobs = $this->jobs_model->get_jobs($catid, $this->datatables, $custom_view);
+			$jobs = $this->jobs_model->get_jobs($catid, $this->datatables, $custom_view, $start_date, $end_date);
 		} elseif($page == "your") {
 			$this->datatables->set_total_rows(
 				$this->jobs_model
@@ -377,7 +380,7 @@ class Jobs extends CI_Controller
 				$r->cat_name,
 				$user,
 				$r->visible == 1 ? '<input type="checkbox" checked onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">' : '<input type="checkbox" onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">',
-				$this->common->get_user_display(array("username" => $r->username, "avatar" => $r->avatar, "online_timestamp" => $r->online_timestamp, "user" => false)),
+				$r->printable == 1 ? '<input type="checkbox" checked onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">' : '<input type="checkbox" onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">',
 				$last_reply,
 				'<a href="'.site_url('jobs/view/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_job/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_job/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
 			) : array(
@@ -400,6 +403,16 @@ class Jobs extends CI_Controller
 		$id = $this->input->post("id");
 		$value = $this->input->post("value");
 		$this->jobs_model->visibleChange($id, array("visible" => $value));
+	}
+	//newly added
+	public function printableChange(){
+		$id = $this->input->post("id");
+		$value = $this->input->post("value");
+		$this->jobs_model->printableChange($id, array("printable" => $value));
+	}
+	//newly added
+	public function printall($catid = 0, $start_date = null, $end_date = null, $printall = 0){
+		$this->jobs_model->printall($catid, $this->common->formatDateMdYToYMd($start_date), $this->common->formatDateMdYToYMd($end_date), $printall);
 	}
 	public function change_status()
 	{
@@ -593,7 +606,59 @@ class Jobs extends CI_Controller
 			),1
 		);
 	}
+	//newly added
+	public function print_viewall()
+	{
+		$id_array = $this->jobs_model->getPrintViewID();
+		if($id_array->num_rows() > 0) {
+			// Check if the user is any of these groups
+			$print_array = array();
+			foreach($id_array->result() as $r) {
+				
+				$id = $r->ID;
+				$job = $this->jobs_model->get_job($id);
+				if($job->num_rows() == 0) {
+					$this->template->error(lang("error_84"));
+				}
+				$job = $job->row();
 
+				$this->template->loadData("activeLink",
+					array("job" => array("general" => 1)));
+
+				// Check user has access
+				$this->check_job_access($job);
+
+				$files = $this->jobs_model->get_job_files($id);
+
+				$replies = $this->jobs_model->get_job_replies($id);
+
+
+				$user_fields = null;
+				if($job->userid > 0) {
+					$user_fields = $this->user_model->get_custom_fields_answers(array(
+						), $job->userid);
+				}
+
+				$job_fields = $this->jobs_model->get_custom_fields_for_job($id);
+				$canned = $this->jobs_model->get_all_canned_responses();
+				$temp = array(
+					"job" => $job,
+					"files" => $files,
+					"replies" => $replies,
+					"user_fields" => $user_fields,
+					"job_fields" => $job_fields,
+					"canned" => $canned
+				);
+				array_push($print_array, $temp);
+			}
+			
+			$this->template->loadAjax("jobs/print_all_jobs.php", array("print_array" => $print_array),1
+			);
+		}
+			
+
+		
+	}
 	private function check_job_access($job)
 	{
 		// Check user has access

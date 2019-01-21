@@ -333,7 +333,14 @@ class Common
 
         return $array;
     }
-
+    public function formatDateMdYToYMd($date){
+        $date = explode("-", $date);
+        return $date[2]."-".$date[0]."-".$date[1];
+    }
+    public function formatDateMdYTodmY($date){
+        $date = explode("-", $date);
+        return $date[1]."-".$date[0]."-".$date[2];
+    }
 }
 
 ?>

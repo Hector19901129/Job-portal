@@ -177,24 +177,18 @@ class Members extends CI_Controller
 			$this->datatables->data[] = array(
 				$r->name,
 				$type,
-				'<input type="checkbox" name="require" value="'. $r->ID .'"'. $str .' id="'. $nm .'">',
+				'<input type="checkbox" name="require" value="'. $r->ID .'"'. $str .' id="'. $nm .'" onclick="selectField(this)">',
 			);
 		}
 		
 		echo json_encode($this->datatables->process());
 	}
 	//newly added
-	public function update_user_fields(){
+	public function update_user_fields($user_id, $checkbox_id){
 		//data['token'] = $this->security->get_csrf_hash();
 
-		$str = $this->input->post("str");
-		$arr = explode("//", $str);
-		$user_id = $arr[1];
-		$field_str = $arr[0];
-		if($field_str == ""){
-			$field_str = ",";
-		}
-		$this->user_model->update_user_field($user_id, $field_str);
+		$value = $this->input->post("value");
+		$this->user_model->update_user_field($user_id, $checkbox_id, $value);
 	}
 }
 

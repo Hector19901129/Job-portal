@@ -32,7 +32,7 @@
 
 </tbody>
 </table>
-<input type="submit" class="btn btn-primary form-control" value="<?php echo lang("ctn_767") ?>" id="submit">
+
 </div>
 
 </div>
@@ -69,37 +69,19 @@ $(document).ready(function() {
     $('#form-search-input').on('keyup change', function () {
     table.search(this.value).draw();
   });
-  $("#submit").click(function(){
-    var str = disp($("[type^='checkbox']").toArray());
-    str += "//";
-    str += "<?php echo $id ?>";
-    
-    //alert(str.split("//")[str.split("//").length - 1]);
+  
+  });
+  function selectField(value){
     var csrfName = '<?php echo $this->security->get_csrf_token_name(); ?>',
       csrfHash = '<?php echo $this->security->get_csrf_hash(); ?>';
-    // var hash = '<?php echo $hash ?>';
-    // alert(csrfHash + " " + hash);
-    // $.ajax({
-    //   type: "get",
-    //   url: "<?php echo site_url("members/update_user_fields") ?>",
-    //   dataType: 'json',
-    //   contentType: 'application/json',
-    //   data: {
-    //     '<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>', 
-    //   },
-    //   success: function(){
-        
-    //   }
-      
-    // });
-    $.post("<?php echo site_url("members/update_user_fields") ?>", 
+    $.post("<?php echo site_url("members/update_user_fields/".$id."/") ?>"+value.id, 
       {'<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>', 
-        str: str}, 
+        value: value.checked == false ? 0 : 1}, 
         function(result){
-           alert("Updated successfully.");
+           url = "<?php echo site_url("members/custom_fields/".$id) ?>"
+           location.href = url;
         });
-  });
-});
+  }
 function disp(divs){
   var str = "";
   for(var i = 0; i < divs.length; i++){

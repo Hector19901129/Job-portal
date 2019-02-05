@@ -193,8 +193,39 @@ class User_Model extends CI_Model
 		$this->db->where("ID", $userid)->update("users", $data);
 	}
 	//newly added
-	public function update_user_field($userid, $data){
-		$this->db->set('custom_fields', $data);
+	public function update_user_field($userid, $checkbox_id, $value){
+		$s = $this->db->where("ID", $userid)->select("custom_fields")->get("users");
+		$r = $s->row();
+		$str = "";
+		$c = explode(",", rtrim($r->custom_fields, ","));
+		if(in_array($checkbox_id, $c)){
+			foreach($c as $key => $value){
+				if($value == $checkbox_id){
+					unset($c[$key]);
+				}
+			}
+		}
+		
+		else{
+			array_push($c, $checkbox_id);
+		}
+		for($i = 0; $i < sizeof($c) - 1; $i++){
+			for($j = $i + 1; $j < sizeof($c); $j++){
+				if($c[$i] < $c[$j]){
+					$temp = $c[$j];
+					$c[$j] = $c[$i];
+					$c[$i] = $temp;
+				}
+			}
+		}
+		foreach($c as $value){
+			$str .= $value.",";
+		}
+		
+		// var_dump($str);
+		// exit;
+			
+		$this->db->set('custom_fields', $str);
 		$this->db->where('id', $userid);
 		$this->db->update('users');
 	}

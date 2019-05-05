@@ -3,6 +3,7 @@ _MACOSX/
 main-new/
 user_guide/
 uploads/
+system/
 .htaccess
 *.zip
 *.rst

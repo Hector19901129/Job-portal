@@ -37,3 +37,6 @@
 13. site_settings <- field_order
 23. jobs <- visible defined 1 
 25. jobs <- printable defined 0
+26. jobs <- is_artwork field added 'null allowed'
+27. email_template <- 2 emails added
+28. artwork_status table added

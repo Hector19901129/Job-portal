@@ -31,6 +31,17 @@ class Mobile extends CI_Controller
 		
 	}
 
+	//newly added 
+	public function confirm_artwork(){
+		$title = $this->input->get('title',true);
+		$email = $this->input->get('email',true);
+		$sign_type = $this->input->get('sign_type',true);
+		$client_name = $this->input->get('client_name',true);
+		$jobid = $this->input->get('jobid',true);
+		$files = $this->jobs_model->get_job_files($jobid);
+		$data = array('title' => $title, 'email' => $email, 'sign_type' => $sign_type, 'client_name' => $client_name, 'jobid' => $jobid, 'files' => $files);
+		$this->load->view('jobs/confirm_artwork', $data);
+	}
 	public function confirm()
 	{
 		$jobid = intval($this->input->post("job_id"));
@@ -72,8 +83,7 @@ class Mobile extends CI_Controller
 
 		$this->job_reply($jobid);
 
-		$this->index();
-		
+		redirect('/mobile', 'refresh');
 	}
 	public function job_reply($id)
 	{
@@ -352,10 +362,7 @@ class Mobile extends CI_Controller
 	            $this->email->set_header($key, $value);
 			}
 			$r = $this->email->send();
-			var_dump($r);
-			var_dump($content);
-			var_dump($email);
-			exit();
+
 			//exit();
 			/*$this->email->from($from_email, 'Your Name'); 
 			$this->email->to($email);
@@ -375,6 +382,5 @@ class Mobile extends CI_Controller
 			//}
 		
 		//$this->session->set_flashdata("globalmsg", lang("success_45"));
-		//redirect(site_url("jobs/view/" . $id));
 	}
 }

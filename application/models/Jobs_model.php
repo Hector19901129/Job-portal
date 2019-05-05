@@ -7,7 +7,11 @@ class Jobs_Model extends CI_Model
 	{
 		return $this->db->get("job_categories");
 	}
-
+	//newly added
+	public function get_artwork_status()
+	{
+		return $this->db->get("artwork_status");
+	}
 	public function get_user_categories($userid)
 	{
 		return $this->db->select("job_categories.name, job_categories.ID")
@@ -337,6 +341,7 @@ class Jobs_Model extends CI_Model
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
+			->where("jobs.is_artwork", NULL)
 			->get("jobs");
 		
 		
@@ -344,7 +349,48 @@ class Jobs_Model extends CI_Model
 		if(isset($r->num)) return $r->num;
 		return 0;
 	}
+	//newly added
+	public function get_jobs_artworks_total($catid, $view, $datatable, $start_date, $end_date, $showall)
+	{
+		$datatable->db_search(array(
+			"jobs.title",
+			"users.username",
+			"u2.username",
+			"jobs.guest_email",
+			"jobs.last_reply_string",
+			"jobs.ID",
+			"jobs.is_artwork"
+			)
+		);
 
+		if($view->num_rows() > 0) {
+			$view = $view->row();
+			$catid = $view->categoryid;
+
+			if($view->status != -1) {
+				$this->db->where("jobs.status", $view->status);
+			}
+		}
+		if($catid > 0) {
+			$this->db->where("jobs.categoryid", $catid);
+		}
+		if($showall == 0){
+			$this->db->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date);
+		}
+		$s = $this->db
+			->select("COUNT(*) as num")
+			->join("users", "users.ID = jobs.userid", "left outer")
+			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
+			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
+			->where("jobs.is_artwork", 1)
+			->get("jobs");
+		
+		
+		$r = $s->row();
+		if(isset($r->num)) return $r->num;
+		return 0;
+	}
 	public function get_jobs_total_no_view($catid)
 	{
 		if($catid > 0) {
@@ -409,10 +455,64 @@ class Jobs_Model extends CI_Model
 			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
 			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
+			->where("jobs.is_artwork", NULL)
 			->limit($datatable->length, $datatable->start)
 			->get("jobs");
 	}
+	//newly added
+	public function get_jobs_artworks($catid, $datatable, $view, $start_date, $end_date, $showall)
+	{
 
+		if($view->num_rows() > 0) {
+			$view = $view->row();
+			$catid = $view->categoryid;
+
+			if($view->status != -1) {
+				$this->db->where("jobs.status", $view->status);
+			}
+		}
+
+		if($catid > 0) {
+			$this->db->where("jobs.categoryid", $catid);
+		}
+		if($showall == 0){
+			$this->db->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') >=", $start_date)
+			->where("DATE_FORMAT(STR_TO_DATE(jobs.job_date, '%d-%m-%Y'), '%Y-%m-%d') <=", $end_date);
+		}
+		$datatable->db_order();
+
+		$datatable->db_search(array(
+			"jobs.title",
+			"users.username",
+			"u2.username",
+			"jobs.guest_email",
+			"jobs.last_reply_string",
+			"jobs.ID"
+			)
+		);
+
+		return $this->db
+			->select("jobs.ID, jobs.title, jobs.userid, jobs.assignedid,
+				jobs.timestamp, jobs.categoryid, jobs.status,
+				jobs.priority, jobs.last_reply_timestamp,
+				jobs.last_reply_userid, jobs.message_id_hash,
+				jobs.guest_email, jobs.visible, jobs.printable, 
+				users.username as client_username, users.avatar as client_avatar,
+				users.online_timestamp as client_online_timestamp,
+				users.first_name as client_first_name,
+				users.last_name as client_last_name,
+				u2.username, u2.avatar, u2.online_timestamp, users.first_name,
+				users.last_name,
+				u3.username as lr_username, u3.avatar as lr_avatar,
+				u3.online_timestamp as lr_online_timestamp,
+				")
+			->join("users", "users.ID = jobs.userid", "left outer")
+			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
+			->join("users as u3", "u3.ID = jobs.last_reply_userid", "left outer")
+			->where("jobs.is_artwork", 1)
+			->limit($datatable->length, $datatable->start)
+			->get("jobs");
+	}
 	public function get_jobs_assigned_total($userid, $catid, $view, $datatable)
 	{
 		$datatable->db_search(array(
@@ -728,7 +828,27 @@ class Jobs_Model extends CI_Model
 			->join("job_categories", "job_categories.ID = jobs.categoryid")
 			->get("jobs");
 	}
-
+	//newly added
+	public function get_artwork($id)
+	{
+		return $this->db
+			->where("jobs.ID", $id)
+			->select("jobs.ID, jobs.title, jobs.userid, jobs.assignedid,
+				jobs.timestamp, jobs.categoryid, jobs.status,
+				jobs.priority, jobs.last_reply_timestamp,
+				jobs.last_reply_userid, jobs.message_id_hash,
+				jobs.guest_email, jobs.guest_password,
+				jobs.notes, jobs.body, jobs.rating,
+				users.username as client_username, users.avatar as client_avatar,
+				users.online_timestamp as client_online_timestamp, users.email as
+				client_email, users.email_notification as client_email_notification,
+				users.first_name, users.last_name,
+				u2.username, u2.avatar, u2.online_timestamp, u2.email,
+				u2.email_notification")
+			->join("users", "users.ID = jobs.userid", "left outer")
+			->join("users as u2", "u2.ID = jobs.assignedid", "left outer")
+			->get("jobs");
+	}
 	public function get_guest_job($email, $pass)
 	{
 		return $this->db

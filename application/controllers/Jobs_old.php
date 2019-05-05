@@ -1776,7 +1776,7 @@ class Jobs extends CI_Controller
 		}
 
 		$fields = $this->jobs_model->get_custom_fields_for_cat($catid);
-		$this->template->loadAjax("jobs/ajax_custom_fields.php", array(
+		$this->template->loadAjax("jobs/-+.php", array(
 				"fields" => $fields
 				), 1
 			);

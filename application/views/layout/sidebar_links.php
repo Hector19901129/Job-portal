@@ -61,8 +61,9 @@
                 <div id="job_sb_c" class="panel-collapse collapse sidebar-links-inner <?php if(isset($activeLink['job'])) echo "in" ?>">
                   <ul class="inner-sidebar-links">
                     <?php if($this->common->has_permissions(array("admin", "job_manager"), $this->user)) : ?>
-                    <li class="<?php if(isset($activeLink['job']['general'])) echo "active" ?>"><a href="<?php echo site_url("jobs") ?>"> <?php echo lang("ctn_528") ?></a></li>
-                  <?php endif; ?>
+                      <li class="<?php if(isset($activeLink['job']['general'])) echo "active" ?>"><a href="<?php echo site_url("jobs") ?>"> <?php echo lang("ctn_528") ?></a></li>
+                    <?php endif; ?>
+                    <li class="<?php if(isset($activeLink['job']['artworks'])) echo "active" ?>"><a href="<?php echo site_url("jobs/artworks") ?>"> <?php echo "Artwork" ?></a></li>
                     <li class="<?php if(isset($activeLink['job']['your'])) echo "active" ?>"><a href="<?php echo site_url("jobs/your") ?>"> <?php echo lang("ctn_529") ?></a></li>
                     <li class="<?php if(isset($activeLink['job']['ass'])) echo "active" ?>"><a href="<?php echo site_url("jobs/assigned") ?>"> <?php echo lang("ctn_530") ?></a></li>
                     <?php if($this->common->has_permissions(array("admin", "job_manager"), $this->user)) : ?>

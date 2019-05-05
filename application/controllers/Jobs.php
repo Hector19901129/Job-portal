@@ -52,7 +52,38 @@ class Jobs extends CI_Controller
 			)
 		);
 	}
-	
+	//newly added
+	public function artworks($catid=0, $start_date = null, $end_date = null, $printall = 0, $showall = 0)
+	{
+		$catid = intval($catid);
+		if(!$this->common->has_permissions(array(
+			"admin", "job_manager"), $this->user)) {
+			$this->template->error(lang("error_85"));
+		}
+		$this->template->loadData("activeLink",
+			array("job" => array("artworks" => 1)));
+
+		if($this->common->has_permissions(array("admin", "job_manager"),
+			$this->user)) {
+			$categories = $this->jobs_model->get_artwork_status();
+		} else {
+			$categories = $this->jobs_model->get_user_categories($this->user->info->ID);
+		}
+		$start_date = $start_date == null ? $this->jobs_model->getOldestDate() : $this->common->formatDateMdYToYmd($start_date);
+		$end_date = $end_date == null ? $this->jobs_model->getLatestDate() : $this->common->formatDateMdYToYmd($end_date);
+		$views = $this->jobs_model->get_custom_views($this->user->info->ID);
+		$this->template->loadContent("jobs/artworks.php", array(
+			"page" => "artworks",
+			"catid" => $catid,
+			"categories" => $categories,
+			"views" => $views,
+			"start_date" => $start_date,
+			"end_date" => $end_date,
+			"printall" => $printall,
+			"showall" => $showall,
+			)
+		);
+	}
 	public function merge_job($jobid)
 	{
 		$jobid = intval($jobid);
@@ -299,28 +330,45 @@ class Jobs extends CI_Controller
 		$this->datatables->set_default_order("jobs.last_reply_timestamp", "desc");
 
 		// Set page ordering options that can be used
-		$this->datatables->ordering(
-			array(
-				 0 => array(
-				 	"jobs.ID" => 0
-				 ),
-				 1 => array(
-				 	"jobs.title" => 0
-				 ),
-				 2 => array(
-				 	"jobs.priority" => 0
-				 ),
-				 3 => array(
-				 	"jobs.status" => 0
-				 ),
-				 4 => array(
-				 	"jobs.categoryid" => 0
-				 ),
-				 8 => array(
-				 	"jobs.last_reply_timestamp" => 0
-				 ),
-			)
-		);
+		if($page == "index"){
+			$this->datatables->ordering(
+				array(
+					 0 => array(
+						 "jobs.ID" => 0
+					 ),
+					 1 => array(
+						 "jobs.title" => 0
+					 ),
+					 2 => array(
+						 "jobs.priority" => 0
+					 ),
+					 3 => array(
+						 "jobs.status" => 0
+					 ),
+					 4 => array(
+						 "jobs.categoryid" => 0
+					 ),
+					 8 => array(
+						 "jobs.last_reply_timestamp" => 0
+					 ),
+				)
+			);
+		}else if($page == "artworks"){
+			$this->datatables->ordering(
+				array(
+					 0 => array(
+						 "jobs.ID" => 0
+					 ),
+					 1 => array(
+						 "jobs.title" => 0
+					 ),
+					 2 => array(
+						 "jobs.status" => 0
+					 ),
+				)
+			);
+		}
+		
 		$start_date = $start_date == null ? null : $this->common->formatDateMdYToYMd($start_date);
 		$end_date = $end_date == null ? null : $this->common->formatDateMdYToYMd($end_date);
 		if($page == "index") {
@@ -341,24 +389,38 @@ class Jobs extends CI_Controller
 					->get_jobs_assigned_total($this->user->info->ID, $catid, $custom_view, $this->datatables)
 			);
 			$jobs = $this->jobs_model->get_jobs_assigned($this->user->info->ID, $catid, $this->datatables, $custom_view);
+		} else if($page == "artworks") {
+			$this->datatables->set_total_rows(
+				$this->jobs_model
+					->get_jobs_artworks_total($catid, $custom_view, $this->datatables, $start_date, $end_date, $showall)
+			);
+			$jobs = $this->jobs_model->get_jobs_artworks($catid, $this->datatables, $custom_view, $start_date, $end_date, $showall);
 		}
-
 		$prioritys = array(0 => "<span class='label label-info'>".lang("ctn_429")."</span>", 1 => "<span class='label label-primary'>".lang("ctn_430")."</span>", 2=> "<span class='label label-warning'>".lang("ctn_431")."</span>", 3 => "<span class='label label-danger'>".lang("ctn_432")."</span>");
-
+		$status = "";
 		foreach($jobs->result() as $r) {
-
-
-			if($r->status == 0) {
-				$status = lang("ctn_465");
-			} elseif($r->status == 1) {
-				$status = lang("ctn_466");
-			} elseif($r->status == 2) {
-				$status = lang("ctn_467");
-			} elseif($r->status == 3) {
-				$status = "Removed";
-			} elseif($r->status == 4) {
-			  $status = "Completed";
+			if($page !== "artworks"){
+				if($r->status == 0) {
+					$status = lang("ctn_465");
+				} elseif($r->status == 1) {
+					$status = lang("ctn_466");
+				} elseif($r->status == 2) {
+					$status = lang("ctn_467");
+				} elseif($r->status == 3) {
+					$status = "Removed";
+				} elseif($r->status == 4) {
+				  $status = "Completed";
+				}
+			}else {
+				if($r->status == 0) {
+					$status = "new";
+				} elseif($r->status == 1) {
+					$status = "approved";
+				} elseif($r->status == 2) {
+					$status = "declined";
+				}
 			}
+			
 
 			if(isset($r->client_username)) {
 		        $user = $this->common->get_user_display(array("username" => $r->client_username, "avatar" => $r->client_avatar, "online_timestamp" => $r->client_online_timestamp, "user" => true));
@@ -372,29 +434,43 @@ class Jobs extends CI_Controller
 		    	$last_reply =  $this->common->get_user_display(array("username" => $r->lr_username, "avatar" => $r->lr_avatar, "online_timestamp" => $r->lr_online_timestamp, "user" => false)) . date($this->settings->info->date_format,$r->last_reply_timestamp);
 		    }
 
-
-			$this->datatables->data[] = $page == "index" ? array(
-				$r->ID,
-				$r->title,
-				$prioritys[$r->priority],
-				$status,
-				$r->cat_name,
-				$user,
-				$r->visible == 1 ? '<input type="checkbox" checked onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">' : '<input type="checkbox" onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">',
-				$r->printable == 1 ? '<input type="checkbox" checked onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">' : '<input type="checkbox" onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">',
-				$last_reply,
-				'<a href="'.site_url('jobs/view/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_job/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_job/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
-			) : array(
-				$r->ID,
-				$r->title,
-				$prioritys[$r->priority],
-				$status,
-				$r->cat_name,
-				$user,
-				$this->common->get_user_display(array("username" => $r->username, "avatar" => $r->avatar, "online_timestamp" => $r->online_timestamp, "user" => false)),
-				$last_reply,
-				'<a href="'.site_url('jobs/view/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_job/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_job/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
-			);
+			if($page == "index"){
+				$this->datatables->data[] = array(
+					$r->ID,
+					$r->title,
+					$prioritys[$r->priority],
+					$status,
+					$r->cat_name,
+					$user,
+					$r->visible == 1 ? '<input type="checkbox" checked onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">' : '<input type="checkbox" onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">',
+					$r->printable == 1 ? '<input type="checkbox" checked onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">' : '<input type="checkbox" onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">',
+					$last_reply,
+					'<a href="'.site_url('jobs/view/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_job/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_job/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
+				);
+			}else if($page == "artworks"){
+				$this->datatables->data[] = array(
+					$r->ID,
+					$r->title,
+					$status,
+					$user,
+					//$r->visible == 1 ? '<input type="checkbox" checked onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">' : '<input type="checkbox" onchange="visibleChange(this)" id = "checkbox'.$r->ID.'">',
+					//$r->printable == 1 ? '<input type="checkbox" checked onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">' : '<input type="checkbox" onchange="printableChange(this)" id = "printcheckbox'.$r->ID.'">',
+					'<a href="'.site_url('jobs/view_artwork/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_artwork/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_artwork/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
+				);
+			}else{
+				$this->datatables->data[] = array(
+					$r->ID,
+					$r->title,
+					$prioritys[$r->priority],
+					$status,
+					$r->cat_name,
+					$user,
+					$this->common->get_user_display(array("username" => $r->username, "avatar" => $r->avatar, "online_timestamp" => $r->online_timestamp, "user" => false)),
+					$last_reply,
+					'<a href="'.site_url('jobs/view/' . $r->ID).'" class="btn btn-info btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_459").'">'.lang("ctn_459").'</a> <a href="'.site_url("jobs/edit_job/" . $r->ID).'" class="btn btn-warning btn-xs" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_55").'"><span class="glyphicon glyphicon-cog"></span></a> <a href="'.site_url("jobs/delete_job/" . $r->ID . "/" . $this->security->get_csrf_hash()).'" class="btn btn-danger btn-xs" onclick="return confirm(\''.lang("ctn_317").'\')" data-toggle="tooltip" data-placement="bottom" title="'.lang("ctn_57").'"><span class="glyphicon glyphicon-trash"></span></a>'
+				);
+			}
+			 
 		}
 
 		echo json_encode($this->datatables->process());
@@ -499,6 +575,64 @@ class Jobs extends CI_Controller
 			"canned" => $canned,
 			"history" => $history,
 			"user_field" => $field
+			)
+		);
+	}
+
+	//newly added
+	public function view_artwork($id)
+	{
+		$id = intval($id);
+		$job = $this->jobs_model->get_artwork($id);
+		if($job->num_rows() == 0) {
+			$this->template->error(lang("error_84"));
+		}
+		$job = $job->row();
+
+		$this->template->loadData("activeLink",
+			array("job" => array("general" => 1)));
+
+		// Check user has access
+		$this->check_job_access($job);
+
+		$files = $this->jobs_model->get_job_files($id);
+
+		$replies = $this->jobs_model->get_job_replies($id);
+
+
+		$user_fields = null;
+		if($job->userid > 0) {
+			$user_fields = $this->user_model->get_custom_fields_answers(array(
+				), $job->userid);
+		}
+
+		$job_fields = $this->jobs_model->get_custom_fields_for_job($id);
+		$canned = $this->jobs_model->get_all_canned_responses();
+		$fields = $this->user_model->get_member_by_id($job->userid);
+		//$field = $fields->row()->custom_fields;
+		$history = $this->jobs_model->get_job_history_limit($id, 6);
+		$sign_type ="";
+		switch($job->categoryid){
+			case 0: $sign_type = "Stockboard"; break;
+			case 1: $sign_type = "Textboard"; break;
+			case 2: $sign_type = "Photoboard"; break;
+			case 3: $sign_type = "Window Graphic"; break;
+			case 4: $sign_type = "Corflute"; break;
+			case 5: $sign_type = "Decals"; break;
+			case 6: $sign_type = "Other"; break;
+		}
+			
+		$artwork = (object)array("title" => $job->title, "email" => $job->guest_email, "sign_type" => $sign_type);
+		$this->template->loadContent("jobs/view_artwork.php", array(
+			"job" => $job,
+			"files" => $files,
+			"replies" => $replies,
+			"user_fields" => $user_fields,
+			"job_fields" => $job_fields,
+			"canned" => $canned,
+			"history" => $history,
+			"user_field" => null,
+			"artwork" => $artwork
 			)
 		);
 	}
@@ -1197,6 +1331,46 @@ class Jobs extends CI_Controller
 		);
 
 	}
+	//newly added
+	public function edit_artwork($id)
+	{
+		$id = intval($id);
+		$job = $this->jobs_model->get_artwork($id);
+		if($job->num_rows() == 0) {
+			$this->template->error(lang("error_84"));
+		}
+		$job = $job->row();
+
+		// Check user has access
+		$this->check_job_access($job);
+
+		$this->template->loadData("activeLink",
+			array("job" => array("general" => 1)));
+
+		// Get sub-categories
+		$sub_cats = null;
+		$sub_cat_fields = null;
+		// if($job->cat_parent > 0) {
+		// 	$sub_cats = $this->jobs_model->get_sub_cats($job->cat_parent);
+		// 	$sub_cat_fields = $this->jobs_model->get_custom_fields_for_cat_job($id, $job->categoryid);
+		// }
+
+		$fields = $this->jobs_model->get_custom_fields_all_cats_job($id);
+
+		$categories = $this->jobs_model->get_category_no_parent();
+
+		$files = $this->jobs_model->get_job_files($id);
+
+		$this->template->loadContent("jobs/edit_artwork.php", array(
+			"job" => $job,
+			"categories" => $categories,
+			"fields" => $fields,
+			//"sub_cats" => $sub_cats,
+			//"sub_cat_fields" => $sub_cat_fields,
+			"job_files" => $files
+			)
+		);
+	}
 
 	public function edit_job_pro($id)
 	{
@@ -1458,6 +1632,25 @@ class Jobs extends CI_Controller
 		redirect(site_url("jobs/view/" . $file->jobid));
 	}
 
+	//newly added 
+	public function delete_artwork($id, $hash){
+		if($hash != $this->security->get_csrf_hash()) {
+			$this->template->error(lang("error_6"));
+		}
+		$id = intval($id);
+		$job = $this->jobs_model->get_artwork($id);
+		if($job->num_rows() == 0) {
+			$this->template->error(lang("error_84"));
+		}
+		$job = $job->row();
+
+		// Check user has access
+		$this->check_job_access($job);
+
+		$this->jobs_model->delete_job($id);
+		$this->session->set_flashdata("globalmsg", lang("success_57"));
+		redirect(site_url("jobs/artworks"));
+	}
 	public function delete_job($id, $hash)
 	{
 		if($hash != $this->security->get_csrf_hash()) {
@@ -1493,7 +1686,629 @@ class Jobs extends CI_Controller
 			)
 		);
 	}
+	//newly added
+	public function add_artwork()
+	{
+		$this->template->loadData("activeLink",
+			array("job" => array("general" => 1)));
 
+		$fields = $this->jobs_model->get_custom_fields_all_cats();
+
+		$categories = $this->jobs_model->get_category_no_parent();
+
+		$this->template->loadContent("jobs/add_artwork.php", array(
+			"categories" => $categories,
+			"fields" => $fields
+			)
+		);
+	}
+	//newly added
+	public function save_edited_artwork($id){
+
+		$id = intval($id);
+		$job = $this->jobs_model->get_artwork($id);
+		if($job->num_rows() == 0) {
+			$this->template->error(lang("error_84"));
+		}
+		$job = $job->row();
+
+		// Check user has access
+		$this->check_job_access($job);
+
+		$title = $this->common->nohtml($this->input->post("title"));
+		$client = $this->common->nohtml($this->input->post("client_name"));
+		$guest_email = $this->common->nohtml($this->input->post("email"));
+		$assigned = "assigned";
+		$priority = 0;
+		$status = 0;
+		$catid = intval($this->input->post("sign_type"));
+		$sub_catid = 0;
+
+		$file_count = intval($this->input->post("file_count"));
+		$body = "";
+		$notes = "";
+
+		if(empty($title)) {
+			$this->template->error(lang("error_81"));
+		}
+
+		if(empty($client)) {
+			$this->template->error("Client Name can not be empty!");
+		}
+
+		if(empty($guest_email)) {
+			$this->template->error("Email can not be empty!");
+		}
+
+		if($file_count == 0) {
+			$this->template->error("File can not be empty!");
+		}
+
+		if($status < 0 || $status > 2) {
+			$this->template->error(lang("error_113"));
+		}
+
+		if($priority < 0 || $priority > 3) {
+			$this->template->error(lang("error_93"));
+		}
+
+		// Get client
+		$clientid = 0;
+		if(!empty($client)) {
+			$user = $this->user_model->get_user_by_username($client);
+			if($user->num_rows() == 0) {
+				$this->template->error(lang("error_114"));
+			}
+			$user = $user->row();
+			$clientid = $user->ID;
+		}
+
+		// Get assigned
+		$assignedid = 0;
+		// if(!empty($assigned)) {
+		// 	$user = $this->user_model->get_user_by_username($assigned);
+		// 	if($user->num_rows() == 0) {
+		// 		$this->template->error(lang("error_115"));
+		// 	}
+		// 	$user = $user->row();
+		// 	$assignedid = $user->ID;
+		// }
+
+		// if($clientid == 0) {
+		// 	if($this->settings->info->enable_job_guests) {
+		// 		if(empty($guest_email)) {
+		// 			$this->template->error(lang("error_116"));
+		// 		}
+		// 	} else {
+		// 		$this->template->error(lang("error_117"));
+		// 	}
+		// }
+
+		// Check categories
+		$categoryid = $catid;
+		// if($category->num_rows() == 0) {
+		// 	$this->template->error(lang("error_87"));
+		// }
+
+		// $category = $category->row();
+
+		// Check subcat
+		// if($sub_catid > 0) {
+		// 	$subcat = $this->jobs_model->get_category($sub_catid);
+		// 	if($subcat->num_rows() == 0) {
+		// 		$this->template->error(lang("error_96"));
+		// 	}
+		// 	$categoryid = $sub_catid;
+		// } else {
+		// 	$categoryid = $catid;
+		// }
+
+		// if($category->no_jobs && $sub_catid == 0) {
+		// 	$this->template->error(lang("error_97"));
+		// }
+
+		// Custom fields
+		$fields = 0;
+		// Process fields
+		$answers = array();
+		// $answers = $this->custom_field_check($fields, $answers);
+
+		// // check subcat or primary cat
+		// if($sub_catid > 0) {
+		// 	$fields = $this->jobs_model->get_custom_fields_for_cat($sub_catid);
+		// } else {
+		// 	$fields = $this->jobs_model->get_custom_fields_for_cat($catid);
+		// }
+		// $answers = $this->custom_field_check($fields, $answers);
+
+		// Upload check
+		$this->load->library("upload");
+
+		$file_data = array();
+		if($this->settings->info->enable_job_uploads) {
+			for($i=1;$i<=$file_count;$i++) {
+				if (isset($_FILES['user_file_' . $i]['size'])
+					&& $_FILES['user_file_' . $i]['size'] > 0) {
+					$this->upload->initialize(array(
+					   "upload_path" => $this->settings->info->upload_path,
+				       "overwrite" => FALSE,
+				       "max_filename" => 300,
+				       "encrypt_name" => TRUE,
+				       "remove_spaces" => TRUE,
+				       "allowed_types" => $this->settings->info->file_types,
+				       "max_size" => $this->settings->info->file_size,
+						)
+					);
+
+					if ( ! $this->upload->do_upload('user_file_' . $i))
+		            {
+		                    $error = array('error' => $this->upload->display_errors());
+
+		                    $this->template->error(lang("error_98") . "<br /><br />" .
+		                    	 $this->upload->display_errors());
+		            }
+
+		            $data = $this->upload->data();
+
+		            $file_data[] = array(
+		            	"upload_file_name" => $data['file_name'],
+		            	"file_type" => $data['file_type'],
+		            	"extension" => $data['file_ext'],
+		            	"file_size" => $data['file_size'],
+		            	"timestamp" => time()
+		            	);
+		        }
+			}
+		}
+
+		// Create job
+		$this->jobs_model->update_job($id, array(
+			"title" => $title,
+			"body" => $body,
+			"userid" => $clientid,
+			"assignedid" => $assignedid,
+			"categoryid" => $categoryid,
+			"status" => $status,
+			"priority" => $priority,
+			"notes" => $notes,
+			"guest_email" => $guest_email,
+			"close_job_date" => $close_job
+			)
+		);
+
+		// Wipe out all old custom field data
+		// $this->jobs_model->delete_custom_field_data($id);
+
+		// // Custom field data
+		// foreach($answers as $d) {
+		// 	$itemname = "";
+		// 	$support = 0;
+		// 	$error = "";
+		// 	if(isset($d['itemname'])) {
+		// 		$itemname = $d['itemname'];
+		// 		$support = $d['support'];
+		// 		$error = $d['error'];
+		// 	}
+		// 	$this->jobs_model->add_custom_field_data(array(
+		// 		"jobid" => $id,
+		// 		"fieldid" => $d['fieldid'],
+		// 		"value" => $d['answer'],
+		// 		"itemname" => $itemname,
+		// 		"support" => $support,
+		// 		"error" => $error
+		// 		)
+		// 	);
+		// }
+
+		// Add Attached files
+		foreach($file_data as $file) {
+			$this->jobs_model->add_attached_files(array(
+				"jobid" => $id,
+				"upload_file_name" => $file['upload_file_name'],
+				"file_type" => $file['file_type'],
+				"extension" => $file['extension'],
+				"file_size" => $file['file_size'],
+				"timestamp" => $file['timestamp'],
+				"userid" => $this->user->info->ID
+				)
+			);
+		}
+
+		$this->jobs_model->add_history(array(
+			"userid" => $this->user->info->ID,
+			"message" => lang("ctn_666"),
+			"timestamp" => time(),
+			"jobid" => $id
+			)
+		);
+
+		$this->session->set_flashdata("globalmsg", lang("success_48"));
+		redirect(site_url("jobs/artworks"));
+
+	}
+	//newly added
+	public function save_artwork(){
+		
+		$title = $this->common->nohtml($this->input->post("title"));
+		$client = $this->common->nohtml($this->input->post("client_name"));
+		$guest_email = $this->common->nohtml($this->input->post("email"));
+		$assigned = "assigned";
+		$priority = 0;
+		$status = 0;
+		$catid = intval($this->input->post("sign_type"));
+		$sub_catid = 0;
+
+		$file_count = intval($this->input->post("file_count"));
+		$body = "";
+		$notes = "";
+
+		if(empty($title)) {
+			$this->template->error(lang("error_81"));
+		}
+
+		if(empty($client)) {
+			$this->template->error("Client Name can not be empty!");
+		}
+
+		if(empty($guest_email)) {
+			$this->template->error("Email can not be empty!");
+		}
+
+		if($file_count == 0) {
+			$this->template->error("File can not be empty!");
+		}
+
+		if($status < 0 || $status > 2) {
+			$this->template->error(lang("error_113"));
+		}
+
+		if($priority < 0 || $priority > 3) {
+			$this->template->error(lang("error_93"));
+		}
+
+		// Get client
+		$clientid = 0;
+		$client_username = "";
+		if(!empty($client)) {
+			$user = $this->user_model->get_user_by_username($client);
+			if($user->num_rows() == 0) {
+				$this->template->error(lang("error_114"));
+			}
+			$user = $user->row();
+			$client_username = $user->username;
+			$client_email = $user->email;
+			$clientid = $user->ID;
+		}
+
+		// Get assigned
+		$assignedid = 0;
+
+		// if($clientid == 0) {
+		// 	if($this->settings->info->enable_job_guests) {
+		// 		if(empty($guest_email)) {
+		// 			$this->template->error(lang("error_116"));
+		// 		}
+		// 	} else {
+		// 		$this->template->error(lang("error_117"));
+		// 	}
+		// }
+
+		// Check categories
+		// $category = $this->jobs_model->get_category($catid);
+		// if($category->num_rows() == 0) {
+		// 	$this->template->error(lang("error_87"));
+		// }
+
+		$categoryid = $catid;
+
+		// Check subcat
+		// if($sub_catid > 0) {
+		// 	$subcat = $this->jobs_model->get_category($sub_catid);
+		// 	if($subcat->num_rows() == 0) {
+		// 		$this->template->error(lang("error_96"));
+		// 	}
+		// 	$categoryid = $sub_catid;
+		// } else {
+		// 	$categoryid = $catid;
+		// }
+
+		// if($category->no_jobs && $sub_catid == 0) {
+		// 	$this->template->error(lang("error_97"));
+		// }
+
+		// Custom fields
+		// $fields = $this->jobs_model->get_custom_fields_all_cats();
+		// // Process fields
+		// $answers = array();
+		// $answers = $this->custom_field_check($fields, $answers);
+
+		// // check subcat or primary cat
+		// if($sub_catid > 0) {
+		// 	$fields = $this->jobs_model->get_custom_fields_for_cat($sub_catid);
+		// } else {
+		// 	$fields = $this->jobs_model->get_custom_fields_for_cat($catid);
+		// }
+		// $answers = $this->custom_field_check($fields, $answers);
+
+		// Upload check
+		$this->load->library("upload");
+
+		$file_data = array();
+		if($this->settings->info->enable_job_uploads) {
+			for($i=1;$i<=$file_count;$i++) {
+				
+				if (isset($_FILES['user_file_'. $i])
+					&& $_FILES['user_file_' . $i]['size'] > 0) {
+					$this->upload->initialize(array(
+					   "upload_path" => $this->settings->info->upload_path,
+					   //"upload_path" => "C:/xampp/htdocs/extra/uploads/",
+				       "overwrite" => FALSE,
+				       "max_filename" => 300,
+				       "encrypt_name" => TRUE,
+				       "remove_spaces" => TRUE,
+				       "allowed_types" => $this->settings->info->file_types,
+				       "max_size" => $this->settings->info->file_size,
+						)
+					);
+
+					if ( ! $this->upload->do_upload('user_file_' . $i))
+		            {
+		                    $error = array('error' => $this->upload->display_errors());
+		                    $this->template->error(lang("error_98") . "<br /><br />" .
+		                    	 $this->upload->display_errors());
+		            }
+
+		            $data = $this->upload->data();
+
+		            $file_data[] = array(
+		            	"upload_file_name" => $data['file_name'],
+		            	"file_type" => $data['file_type'],
+		            	"extension" => $data['file_ext'],
+		            	"file_size" => $data['file_size'],
+		            	"timestamp" => time()
+						);
+					
+		        }
+			}
+		}
+
+		// Notifications
+
+		// Create job
+		// Message id hash
+		$message_id_hash = md5(rand(1,100000) . $title . time());
+		$guest_password = $this->common->randomPassword();
+
+		// Create job
+		$jobid = $this->jobs_model->add_job(array(
+			"title" => $title,
+			"body" => $body,
+			"userid" => $clientid,
+			"assignedid" => $assignedid,
+			"timestamp" => time(),
+			"categoryid" => $categoryid,
+			"status" => $status,
+			"priority" => $priority,
+			"last_reply_timestamp" => time(),
+			"last_reply_string" => date($this->settings->info->date_format, time()),
+			"notes" => $notes,
+			"message_id_hash" => $message_id_hash,
+			"guest_email" => $guest_email,
+			"guest_password" => $guest_password,
+			"job_date" => date("d-n-Y"),
+			"is_artwork" => 1
+			)
+		);
+
+		// Custom field data
+		// foreach($answers as $d) {
+		// 	$itemname = "";
+		// 	$support = 0;
+		// 	$error = "";
+		// 	if(isset($d['itemname'])) {
+		// 		$itemname = $d['itemname'];
+		// 		$support = $d['support'];
+		// 		$error = $d['error'];
+		// 	}
+		// 	$this->jobs_model->add_custom_field_data(array(
+		// 		"jobid" => $jobid,
+		// 		"fieldid" => $d['fieldid'],
+		// 		"value" => $d['answer'],
+		// 		"itemname" => $itemname,
+		// 		"support" => $support,
+		// 		"error" => $error
+		// 		)
+		// 	);
+		// }
+
+		// Add Attached files
+		foreach($file_data as $file) {
+			$this->jobs_model->add_attached_files(array(
+				"jobid" => $jobid,
+				"upload_file_name" => $file['upload_file_name'],
+				"file_type" => $file['file_type'],
+				"extension" => $file['extension'],
+				"file_size" => $file['file_size'],
+				"timestamp" => $file['timestamp'],
+				"userid" => $this->user->info->ID
+				)
+			);
+		}
+
+		$this->jobs_model->add_history(array(
+			"userid" => $this->user->info->ID,
+			"message" => lang("ctn_668"),
+			"timestamp" => time(),
+			"jobid" => $jobid
+			)
+		);
+
+		// if($clientid > 0) {
+			if(!isset($_COOKIE['language'])) {
+				// Get first language in list as default
+				$lang = $this->config->item("language");
+			} else {
+				$lang = $this->common->nohtml($_COOKIE["language"]);
+			}
+
+			// Send Email
+			$email_template = $this->home_model->get_email_template_hook("new_artwork", $lang);
+			if($email_template->num_rows() == 0) {
+				$this->template->error(lang("error_48"));
+			}
+			$email_template = $email_template->row();
+
+			// if($clientid == 0) {
+			// 	$username = $guest_email;
+			// 	$email = $guest_email;
+			// } else {
+			// 	$username = $client_username;
+			// 	$email = $client_email;
+			// }
+			$sign_type ="";
+			switch($job->categoryid){
+				case 0: $sign_type = "Stockboard"; break;
+				case 1: $sign_type = "Textboard"; break;
+				case 2: $sign_type = "Photoboard"; break;
+				case 3: $sign_type = "Window Graphic"; break;
+				case 4: $sign_type = "Corflute"; break;
+				case 5: $sign_type = "Decals"; break;
+				case 6: $sign_type = "Other"; break;
+			}
+			$user_page_link = "https://scportal.com.au/index.php/mobile/confirm_artwork?title=".urlencode($title)."&client_name=".urlencode($client)."&email=".urlencode($guest_email)."&sign_type=".$sign_type."&jobid=".$jobid;
+			$email_template->message = $this->common->replace_keywords(array(
+				"[USERNAME]" => $client_username,
+				"[USER_PAGE_LINK]" => $user_page_link,
+				"[SITE_NAME]" =>  $this->settings->info->site_name,
+				),
+			$email_template->message);
+
+			$headers = array(
+				"Message-ID" => $message_id_hash
+				);
+			// var_dump($user_page_link);
+			// exit();
+			$this->common->send_email($email_template->title." ".$title,
+				 $email_template->message, $guest_email, $headers);
+		
+		$this->session->set_flashdata("globalmsg", lang("success_44"));
+		redirect(site_url("jobs/artworks"));
+	}
+	
+	//newly added 
+	public function save_status(){
+		$jobid = $this->common->nohtml($this->input->post("jobid"));
+		$approve = intval($this->input->post("approve"));
+		$comment = $this->common->nohtml($this->input->post("comment"));
+
+		$this->jobs_model->update_job($jobid, array(
+			"notes" => $comment, "status" => $approve
+			)
+		);
+
+		$job = $this->jobs_model->get_artwork($jobid);
+		$job = $job->row();
+		if($approve === 0){
+			if(!isset($_COOKIE['language'])) {
+				// Get first language in list as default
+				$lang = $this->config->item("language");
+			} else {
+				$lang = $this->common->nohtml($_COOKIE["language"]);
+			}
+
+			// Send Email
+			$email_template = $this->home_model->get_email_template_hook("confirm_email", $lang);
+			if($email_template->num_rows() == 0) {
+				$this->template->error(lang("error_48"));
+			}
+			$email_template = $email_template->row();
+
+			// if($clientid == 0) {
+			// 	$username = $guest_email;
+			// 	$email = $guest_email;
+			// } else {
+			// 	$username = $client_username;
+			// 	$email = $client_email;
+			// }
+			$sign_type ="";
+			switch($job->categoryid){
+				case 0: $sign_type = "Stockboard"; break;
+				case 1: $sign_type = "Textboard"; break;
+				case 2: $sign_type = "Photoboard"; break;
+				case 3: $sign_type = "Window Graphic"; break;
+				case 4: $sign_type = "Corflute"; break;
+				case 5: $sign_type = "Decals"; break;
+				case 6: $sign_type = "Other"; break;
+			}
+
+			$email_template->message = $this->common->replace_keywords(array(
+				"[TITLE]" => $job->title,
+				"[APPROVE_STATUS]" => "declined",
+				"[COMMENT]" => $comment,
+				"[SITE_NAME]" =>  $this->settings->info->site_name,
+				),
+			$email_template->message);
+			$message_id_hash = md5(rand(1,100000) . $job->title . time());
+			$headers = array(
+				"Message-ID" => $message_id_hash
+				);
+			// var_dump($email_template->message);
+			// exit();
+			$email = "order@signcreators.com.au";
+			$this->common->send_email($email_template->title,
+				 $email_template->message, $email, $headers);
+		}
+		else {
+			if(!isset($_COOKIE['language'])) {
+				// Get first language in list as default
+				$lang = $this->config->item("language");
+			} else {
+				$lang = $this->common->nohtml($_COOKIE["language"]);
+			}
+
+			// Send Email
+			$email_template = $this->home_model->get_email_template_hook("confirm_email", $lang);
+			if($email_template->num_rows() == 0) {
+				$this->template->error(lang("error_48"));
+			}
+			$email_template = $email_template->row();
+
+			// if($clientid == 0) {
+			// 	$username = $guest_email;
+			// 	$email = $guest_email;
+			// } else {
+			// 	$username = $client_username;
+			// 	$email = $client_email;
+			// }
+			$sign_type ="";
+			switch($job->categoryid){
+				case 0: $sign_type = "Stockboard"; break;
+				case 1: $sign_type = "Textboard"; break;
+				case 2: $sign_type = "Photoboard"; break;
+				case 3: $sign_type = "Window Graphic"; break;
+				case 4: $sign_type = "Corflute"; break;
+				case 5: $sign_type = "Decals"; break;
+				case 6: $sign_type = "Other"; break;
+			}
+
+			$email_template->message = $this->common->replace_keywords(array(
+				"[TITLE]" => $job->title,
+				"[APPROVE_STATUS]" => "approved",
+				"[COMMENT]" => "",
+				"[SITE_NAME]" =>  $this->settings->info->site_name,
+				),
+			$email_template->message);
+			$message_id_hash = md5(rand(1,100000) . $job->title . time());
+			$headers = array(
+				"Message-ID" => $message_id_hash
+				);
+			// var_dump($email_template->message);
+			// exit();
+			$email = "order@signcreators.com.au";
+			$this->common->send_email($email_template->title,
+				 $email_template->message, $email, $headers);
+		}
+	}
 	public function add_pro()
 	{
 		$title = $this->common->nohtml($this->input->post("title"));
@@ -1940,10 +2755,12 @@ class Jobs extends CI_Controller
 		if($category->num_rows() == 0) {
 			$this->template->errori(lang("error_104"));
 		}
-
 		$fields = $this->jobs_model->get_custom_fields_for_cat($catid);
+		$fields1 = $this->user_model->get_member_by_id($this->user->info->ID);
+		$field = $fields1->row()->custom_fields;
+		
 		$this->template->loadAjax("jobs/ajax_custom_fields.php", array(
-				"fields" => $fields
+				"fields" => $fields->result(), "user_field" => $field
 				), 1
 			);
 	}
@@ -1951,6 +2768,7 @@ class Jobs extends CI_Controller
 	public function get_sub_cats($parent)
 	{
 		$parent = intval($parent);
+		
 		$category = $this->jobs_model->get_category($parent);
 		if($category->num_rows() == 0) {
 			$this->template->errori(lang("error_104"));
@@ -1960,7 +2778,6 @@ class Jobs extends CI_Controller
 		if($category->cat_parent > 0) {
 			$this->template->errori(lang("error_105"));
 		}
-
 		// Get sub cats
 		$sub_cats = $this->jobs_model->get_sub_cats($parent);
 		if($sub_cats->num_rows() > 0) {

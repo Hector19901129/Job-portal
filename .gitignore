@@ -6,4 +6,5 @@ uploads/
 .htaccess
 *.zip
 *.rst
+jobs_portal.sql
 

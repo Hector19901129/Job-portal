@@ -129,27 +129,27 @@
             </div>
         <?php endif; ?>
         <div class="small-text">
-        <?php if($r1["job_fields"]) : ?>
-            <?php foreach($r1["job_fields"]->result() as $r) : ?>
-              <p><strong><?php echo $r->name ?></strong><br /><?php echo $r->value ?></p>
-            <?php endforeach; ?>
-          <?php endif; ?>
-          </div>
-          <hr>
+            <?php if($r1["job_fields"]) : ?>
+                <?php foreach($r1["job_fields"]->result() as $r) : ?>
+                    <p><strong><?php echo $r->name ?></strong><br /><?php echo $r->value ?></p>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <hr>
 
         <!-- <div class="media" style="overflow: visible !important;">
           <div class="media-left">
-              <?php echo $this->common->get_user_display(array("username" => $r1["job"]->client_username, "avatar" => $r1["job"]->client_avatar, "online_timestamp" => $r1["job"]->client_online_timestamp, "user" => false)) ?>
+        <?php echo $this->common->get_user_display(array("username" => $r1["job"]->client_username, "avatar" => $r1["job"]->client_avatar, "online_timestamp" => $r1["job"]->client_online_timestamp, "user" => false)) ?>
           </div>
           <div class="media-body" style="overflow: visible !important;">
-            <p><?php echo lang("ctn_611") ?>: <?php echo $r1["job"]->ID ?></p>
-            <p><?php echo lang("ctn_468") ?>: <?php if(isset($r1["job"]->client_username)) : ?><a href="<?php echo site_url("profile/" . $r1["job"]->client_username) ?>"><?php echo $r1["job"]->client_username ?></a> <?php else : ?> <?php echo lang("ctn_469") ?>: <?php echo $r1["job"]->guest_email ?><?php endif; ?></p>
+        <p><?php echo lang("ctn_611") ?>: <?php echo $r1["job"]->ID ?></p>
+        <p><?php echo lang("ctn_468") ?>: <?php if(isset($r1["job"]->client_username)) : ?><a href="<?php echo site_url("profile/" . $r1["job"]->client_username) ?>"><?php echo $r1["job"]->client_username ?></a> <?php else : ?> <?php echo lang("ctn_469") ?>: <?php echo $r1["job"]->guest_email ?><?php endif; ?></p>
 
-              <div class=" small-text">
-                <table class="table">
-                <tr><td><?php echo lang("ctn_25") ?></td><td><?php echo $r1["job"]->client_username ?></td></tr>
-                <tr><td><?php echo lang("ctn_24") ?></td><td><?php echo $r1["job"]->client_email ?></td></tr>
-                <tr><td><?php echo lang("ctn_81") ?></td><td><?php echo $r1["job"]->first_name ?> <?php echo $r1["job"]->last_name ?></td></tr>
+        <div class=" small-text">
+        <table class="table">
+        <tr><td><?php echo lang("ctn_25") ?></td><td><?php echo $r1["job"]->client_username ?></td></tr>
+        <tr><td><?php echo lang("ctn_24") ?></td><td><?php echo $r1["job"]->client_email ?></td></tr>
+        <tr><td><?php echo lang("ctn_81") ?></td><td><?php echo $r1["job"]->first_name ?> <?php echo $r1["job"]->last_name ?></td></tr>
                 <?php if($r1["user_fields"]) : ?>
                 <?php foreach($r1["user_fields"]->result() as $r) : ?>
                   <tr><td><?php echo $r->name ?></td><td><?php echo $r->value ?></td></tr>

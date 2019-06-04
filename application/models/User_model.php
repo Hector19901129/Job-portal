@@ -319,7 +319,8 @@ class User_Model extends CI_Model
 	public function get_custom_fields_answers($data, $userid) 
 	{
 		if(isset($data['edit'])) {
-			$this->db->where("custom_fields.edit", 1);
+            $this->db->where("custom_fields.edit", 1);
+            
 		}
 		return $this->db
 			->select("custom_fields.ID, custom_fields.name, custom_fields.type,

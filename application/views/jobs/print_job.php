@@ -74,7 +74,9 @@
         <div class="row">
         <div class="col-md-12">
         <div class="white-area-content">
-
+        <?php 
+        //   var_dump( $user_fields->result() );
+        ?>
 
 
         <?php $prioritys = array(0 => "<span class='label label-info'>".lang("ctn_429")."</span>", 1 => "<span class='label label-primary'>".lang("ctn_430")."</span>", 2=> "<span class='label label-warning'>".lang("ctn_431")."</span>", 3 => "<span class='label label-danger'>".lang("ctn_432")."</span>"); ?>

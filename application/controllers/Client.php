@@ -29,7 +29,8 @@ class Client extends CI_Controller
 
 	public function index()
 	{
-		$fields = $this->jobs_model->get_custom_fields_all_cats();
+        $fields = $this->jobs_model->get_custom_fields_all_cats();
+
 		$categories = $this->jobs_model->get_category_no_parent();
 
 		$articles = $this->knowledge_model->get_recent_articles(4);

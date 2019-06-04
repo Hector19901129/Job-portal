@@ -774,7 +774,9 @@ class Jobs extends CI_Controller
 						), $job->userid);
 				}
 
-				$job_fields = $this->jobs_model->get_custom_fields_for_job($id);
+                $job_fields = $this->jobs_model->get_custom_fields_for_job($id);
+                // var_dump($user_fields->result());
+                // exit();
 				$canned = $this->jobs_model->get_all_canned_responses();
 				$temp = array(
 					"job" => $job,
